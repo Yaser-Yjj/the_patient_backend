@@ -1,4 +1,4 @@
-package com.example.the_patient
+package com.benbar.the_patient
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
