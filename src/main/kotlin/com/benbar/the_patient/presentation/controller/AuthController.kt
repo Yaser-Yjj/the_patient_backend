@@ -1,10 +1,12 @@
 package com.benbar.the_patient.presentation.controller
 
-
 import com.benbar.the_patient.domain.model.User
+import com.benbar.the_patient.domain.usecase.LoginUserUseCase
 import com.benbar.the_patient.domain.usecase.RegisterUserUseCase
-import com.benbar.the_patient.presentation.response.UserResponse
+import com.benbar.the_patient.presentation.request.LoginRequest
 import com.benbar.the_patient.presentation.request.RegisterRequest
+import com.benbar.the_patient.presentation.response.LoginResponse
+import com.benbar.the_patient.presentation.response.UserResponse
 import org.springframework.http.ResponseEntity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.web.bind.annotation.*
@@ -13,8 +15,11 @@ import java.time.LocalDateTime
 @RestController
 @RequestMapping("/api/auth")
 class AuthController(
-    private val registerUserUseCase: RegisterUserUseCase
+    private val registerUserUseCase: RegisterUserUseCase,
+    private val loginUserUseCase: LoginUserUseCase,
+    private val passwordEncoder: BCryptPasswordEncoder
 ) {
+
     @PostMapping("/register")
     fun register(@RequestBody request: RegisterRequest): ResponseEntity<UserResponse> {
         val user = User(
@@ -30,7 +35,7 @@ class AuthController(
             isActive = true,
             updatedAt = LocalDateTime.now(),
             email = request.email,
-            passwordHash = hashPassword(request.password),
+            passwordHash = passwordEncoder.encode(request.password),
             role = "patient",
             createdAt = LocalDateTime.now()
         )
@@ -38,7 +43,17 @@ class AuthController(
         return ResponseEntity.ok(UserResponse.from(savedUser))
     }
 
-    private fun hashPassword(password: String): String {
-        return BCryptPasswordEncoder().encode(password)
+    @PostMapping("/login")
+    fun login(@RequestBody request: LoginRequest): ResponseEntity<LoginResponse> {
+        val user = loginUserUseCase.execute(request.email, request.password)
+        return ResponseEntity.ok(
+            LoginResponse(
+                id = user.id,
+                fullName = "${user.firstName} ${user.lastName}",
+                email = user.email,
+                role = user.role,
+                message = "Login successful"
+            )
+        )
     }
 }
